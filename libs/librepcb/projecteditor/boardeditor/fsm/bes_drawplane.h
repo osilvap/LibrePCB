@@ -17,74 +17,76 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef LIBREPCB_PROJECT_BES_FSM_H
-#define LIBREPCB_PROJECT_BES_FSM_H
+#ifndef LIBREPCB_PROJECT_EDITOR_BES_DRAWPLANE_H
+#define LIBREPCB_PROJECT_EDITOR_BES_DRAWPLANE_H
 
 /*****************************************************************************************
  *  Includes
  ****************************************************************************************/
 #include <QtCore>
+#include <QtWidgets>
 #include "bes_base.h"
 
 /*****************************************************************************************
  *  Namespace / Forward Declarations
  ****************************************************************************************/
 namespace librepcb {
+
+class GraphicsLayerComboBox;
+
 namespace project {
+
+class BI_NetPoint;
+class BI_NetLine;
+
 namespace editor {
 
 /*****************************************************************************************
- *  Class BES_FSM
+ *  Class BES_DrawPlane
  ****************************************************************************************/
 
 /**
- * @brief The BES_FSM (Board Editor Finite State Machine) class
+ * @brief The BES_DrawPlane class
  */
-class BES_FSM final : public BES_Base
+class BES_DrawPlane final : public BES_Base
 {
         Q_OBJECT
 
     public:
 
-        /// FSM States
-        enum State {
-            State_NoState,      ///< no state active
-            State_Select,       ///< @see #project#BES_Select
-            State_DrawTrace,    ///< @see #project#BES_DrawTrace
-            State_DrawPolygon,  ///< @see librepcb#project#BES_DrawPolygon
-            State_AddVia,       ///< @see librepcb#project#BES_AddVia
-            State_AddDevice,    ///< @see librepcb#project#BES_AddDevice
-            State_DrawPlane,    ///< @see #project#BES_DrawPlane
-        };
-
-
         // Constructors / Destructor
-        explicit BES_FSM(BoardEditor& editor, Ui::BoardEditor& editorUi,
-                         GraphicsView& editorGraphicsView, UndoStack& undoStack) noexcept;
-        ~BES_FSM() noexcept;
-
-        // Getters
-        State getCurrentState() const noexcept {return mCurrentState;}
+        explicit BES_DrawPlane(BoardEditor& editor, Ui::BoardEditor& editorUi,
+                               GraphicsView& editorGraphicsView, UndoStack& undoStack);
+        ~BES_DrawPlane();
 
         // General Methods
-        bool processEvent(BEE_Base* event, bool deleteEvent = false) noexcept;
-
-
-    signals:
-        void stateChanged(State newState);
-
+        ProcRetVal process(BEE_Base* event) noexcept override;
+        bool entry(BEE_Base* event) noexcept override;
+        bool exit(BEE_Base* event) noexcept override;
 
     private:
 
-        // General Methods
-        ProcRetVal process(BEE_Base* event) noexcept;
-        State processEventFromChild(BEE_Base* event) noexcept; ///< returns the next state
+        // Private Types
+
+        /// Internal FSM States (substates)
+        enum SubState {
+            SubState_Idle,                ///< idle state [initial state]
+            SubState_PositioningVertex    ///< in this state, an undo command is active!
+        };
 
 
-        // Attributes
-        State mCurrentState;
-        State mPreviousState;
-        QHash<State, BES_Base*> mSubStates;
+        // Private Methods
+        void layerComboBoxLayerChanged(const QString& name) noexcept;
+
+
+        // General Attributes
+        SubState mSubState; ///< the current substate
+        QString mCurrentLayerName; ///< the current board layer name
+
+        // Widgets for the command toolbar
+        QList<QAction*> mActionSeparators;
+        QLabel* mLayerLabel;
+        GraphicsLayerComboBox* mLayerComboBox;
 };
 
 /*****************************************************************************************
@@ -95,4 +97,4 @@ class BES_FSM final : public BES_Base
 } // namespace project
 } // namespace librepcb
 
-#endif // LIBREPCB_PROJECT_BES_FSM_H
+#endif // LIBREPCB_PROJECT_EDITOR_BES_DRAWPLANE_H
