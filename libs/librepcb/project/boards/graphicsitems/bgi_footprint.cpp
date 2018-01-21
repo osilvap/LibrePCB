@@ -31,6 +31,13 @@
 #include "../items/bi_device.h"
 #include "../boardlayerstack.h"
 #include <librepcb/common/attributes/attributesubstitutor.h>
+#include <librepcb/common/font/strokefontpool.h>
+#include <librepcb/common/toolbox.h>
+#include <librepcb/common/graphics/primitivepathgraphicsitem.h>
+
+#define USE_TTF         0
+#define USE_FONTOBENE   0
+#define USE_CHILDITEMS  1
 
 /*****************************************************************************************
  *  Namespace
@@ -50,6 +57,31 @@ BGI_Footprint::BGI_Footprint(BI_Footprint& footprint) noexcept :
     mFont.setFamily("Nimbus Sans L");
 
     updateCacheAndRepaint();
+
+
+#if USE_CHILDITEMS
+    // texts
+    for (const Text& text : mLibFootprint.getTexts()) {
+        GraphicsLayer* layer = getLayer(text.getLayerName());
+        if (!layer) continue;
+
+        QString str = AttributeSubstitutor::substitute(text.getText(), &mFootprint);
+        const StrokeFont& font = mFootprint.getProject().getStrokeFonts().getFont("librepcb.bene");
+
+        QPainterPath path;
+        QList<Polygon> polygons = font.stroke(str, text.getHeight());
+        foreach (const Polygon& p, polygons) {
+            path.addPath(p.toQPainterPathPx());
+        }
+
+        PrimitivePathGraphicsItem* item = new PrimitivePathGraphicsItem(this);
+        item->setPosition(text.getPosition());
+        item->setRotation(text.getRotation());
+        item->setPath(path);
+        item->setLineWidth(Length(200000));
+        item->setLineLayer(layer);
+    }
+#endif
 }
 
 BGI_Footprint::~BGI_Footprint() noexcept
@@ -112,6 +144,7 @@ void BGI_Footprint::updateCacheAndRepaint() noexcept
     }
 
     // texts
+#if USE_TTF
     mCachedTextProperties.clear();
     for (const Text& text : mLibFootprint.getTexts()) {
         layer = getLayer(text.getLayerName());
@@ -161,6 +194,28 @@ void BGI_Footprint::updateCacheAndRepaint() noexcept
         // save properties
         mCachedTextProperties.insert(&text, props);
     }
+#endif
+
+#if USE_FONTOBENE
+    // texts
+    for (const Text& text : mLibFootprint.getTexts()) {
+        layer = getLayer(text.getLayerName());
+        if (!layer) continue;
+        if (!layer->isVisible()) continue;
+
+        QString str = AttributeSubstitutor::substitute(text.getText(), &mFootprint);
+        const StrokeFont& font = mFootprint.getProject().getStrokeFonts().getFont("librepcb.bene");
+
+        QList<Polygon> polygons = font.stroke(str, text.getHeight());
+        mTextPolygons[&text] = polygons;
+
+        foreach (const Polygon& p, polygons) {
+            QPainterPath path = p.translated(text.getPosition()).toQPainterPathPx();
+            QRectF rect = Toolbox::adjustedBoundingRect(path.boundingRect(), Length(200000).toPx());
+            mBoundingRect = mBoundingRect.united(rect);
+        }
+    }
+#endif
 
     if (!mShape.isEmpty())
         mShape.setFillRule(Qt::WindingFill);
@@ -251,6 +306,7 @@ void BGI_Footprint::paint(QPainter* painter, const QStyleOptionGraphicsItem* opt
         // TODO: rotation
     }
 
+#if USE_TTF
     // draw all texts
     for (const Text& text : mLibFootprint.getTexts()) {
         // get layer
@@ -294,6 +350,32 @@ void BGI_Footprint::paint(QPainter* painter, const QStyleOptionGraphicsItem* opt
 #endif
         painter->restore();
     }
+#endif
+
+#if USE_FONTOBENE
+    // draw all texts
+    for (const Text& text : mLibFootprint.getTexts()) {
+        // get layer
+        layer = getLayer(text.getLayerName());
+        if (!layer) continue;
+        if (!layer->isVisible()) continue;
+        painter->setPen(QPen(layer->getColor(selected), Length(200000).toPx(),
+                             Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+        painter->setBrush(Qt::NoBrush);
+        painter->save();
+        painter->translate(text.getPosition().toPxQPointF());
+        painter->rotate(-text.getRotation().toDeg());
+        foreach (const Polygon& polygon, mTextPolygons[&text]) {
+            //painter->drawPath(polygon.toQPainterPathPx());
+            Point last = polygon.getStartPos();
+            for (const PolygonSegment& segment : polygon.getSegments()) {
+                painter->drawLine(last.toPxQPointF(), segment.getEndPos().toPxQPointF());
+                last = segment.getEndPos();
+            }
+        }
+        painter->restore();
+    }
+#endif
 
     // draw all holes
     for (const Hole& hole : mLibFootprint.getHoles()) {
