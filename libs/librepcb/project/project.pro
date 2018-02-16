@@ -24,6 +24,7 @@ SOURCES += \
     boards/board.cpp \
     boards/boardgerberexport.cpp \
     boards/boardlayerstack.cpp \
+    boards/boardplanefragmentsbuilder.cpp \
     boards/boardselectionquery.cpp \
     boards/boardusersettings.cpp \
     boards/cmd/cmdboardadd.cpp \
@@ -47,6 +48,7 @@ SOURCES += \
     boards/graphicsitems/bgi_footprintpad.cpp \
     boards/graphicsitems/bgi_netline.cpp \
     boards/graphicsitems/bgi_netpoint.cpp \
+    boards/graphicsitems/bgi_plane.cpp \
     boards/graphicsitems/bgi_via.cpp \
     boards/items/bi_base.cpp \
     boards/items/bi_device.cpp \
@@ -55,6 +57,7 @@ SOURCES += \
     boards/items/bi_netline.cpp \
     boards/items/bi_netpoint.cpp \
     boards/items/bi_netsegment.cpp \
+    boards/items/bi_plane.cpp \
     boards/items/bi_polygon.cpp \
     boards/items/bi_via.cpp \
     circuit/circuit.cpp \
@@ -117,6 +120,7 @@ HEADERS += \
     boards/board.h \
     boards/boardgerberexport.h \
     boards/boardlayerstack.h \
+    boards/boardplanefragmentsbuilder.h \
     boards/boardselectionquery.h \
     boards/boardusersettings.h \
     boards/cmd/cmdboardadd.h \
@@ -140,6 +144,7 @@ HEADERS += \
     boards/graphicsitems/bgi_footprintpad.h \
     boards/graphicsitems/bgi_netline.h \
     boards/graphicsitems/bgi_netpoint.h \
+    boards/graphicsitems/bgi_plane.h \
     boards/graphicsitems/bgi_via.h \
     boards/items/bi_base.h \
     boards/items/bi_device.h \
@@ -148,6 +153,7 @@ HEADERS += \
     boards/items/bi_netline.h \
     boards/items/bi_netpoint.h \
     boards/items/bi_netsegment.h \
+    boards/items/bi_plane.h \
     boards/items/bi_polygon.h \
     boards/items/bi_via.h \
     circuit/circuit.h \
